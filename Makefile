@@ -1,4 +1,5 @@
 include .env
+export
 export PROJECT_ROOT=$(shell pwd)
 
 env-up:
@@ -10,8 +11,8 @@ env-down:
 env-cleanup:
 	@read -p "Очистить все volume файлы окружения, опасность утери данных. [y/N]: " ans; \
 	if [ "$$ans" = "y" ]; then \
-		docker compose down todoapp-postgres && \
-		rm -rf out/pgdata && \
+		docker compose down todoapp-postgres port-forwarder && \
+		rm -rf ${PROJECT_ROOT}/out/pgdata && \
 		echo "Файлы окружения очищены" ; \
 	else \
 		echo "Очистка окружения отменена" ; \
@@ -25,7 +26,7 @@ env-port-forward:
 env-port-close:
 	@docker compose down port-forwarder
 
-	
+
 migrate-create:
 	@if [ -z "$(seq)" ]; then \
 		echo "Отсутствует необходимый параметр seq. Пример: make migrate-create seq=init" ; \
@@ -52,3 +53,11 @@ migrate-action:
 		-path /migrations \
 		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@todoapp-postgres:5432/${POSTGRES_DB}?sslmode=disable \
 		"$(action)"
+
+	
+todoapp-run:
+	@export LOGGER_FOLDER=${PROJECT_ROOT}/out/logs && \
+	export POSTGRES_HOST=localhost && \
+	export POSTGRES_PORT=5434 && \
+	go mod tidy && \
+	go run ${PROJECT_ROOT}/cmd/todoapp/main.go
